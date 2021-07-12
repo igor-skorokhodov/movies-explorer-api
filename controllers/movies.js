@@ -16,7 +16,6 @@ function createMovie(req, res, next) {
       res.status(200).send(movie);
     })
     .catch((err) => {
-      console.log(err);
       if (err.name === 'ValidationError') {
         next(new ReqError('ошибка валидации'));
       } else {

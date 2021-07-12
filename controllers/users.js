@@ -67,7 +67,6 @@ function updateUser(req, res, next) {
     {
       name: req.body.name,
       email: req.body.email,
-      name: req.body.name,
     },
     {
       new: true,
@@ -79,7 +78,6 @@ function updateUser(req, res, next) {
       res.status(200).send({ user });
     })
     .catch((err) => {
-      console.log(err)
       if (err.name === 'ValidationError') {
         next(new ReqError('ошибка валидации'));
       } else {
