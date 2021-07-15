@@ -1,4 +1,3 @@
-const validator = require('validator');
 const bcrypt = require('bcryptjs');
 const jwt = require('jsonwebtoken');
 const User = require('../models/user');
@@ -10,13 +9,12 @@ const ConflictError = require('../errors/conflict-error');
 const { NODE_ENV, JWT_SECRET } = process.env;
 
 function getUser(req, res, next) {
-  const id = req.headers.userid;
+  const id = req.user._id;
 
   return User.findById(id)
     .orFail(new NotFoundError('Пользователь не найден'))
     .then((user) => {
-      user.password = null;
-      res.status(200).send({ user });
+      res.status(200).send({ name: user.name, email: user.email });
     })
     .catch((err) => {
       if (err.name === 'CastError') {
@@ -28,39 +26,32 @@ function getUser(req, res, next) {
 }
 
 function createUser(req, res, next) {
-  const { email, password } = req.body;
-
-  if (!email || !password) {
-    throw new ReqError('Email или пароль не могут быть пустыми');
-  }
-
-  if (validator.isEmail(email) === false) {
-    throw new ReqError('Email не корректен');
-  }
-
-  User.findOne({ email })
-    .then((user) => {
-      if (user) {
-        throw new ConflictError('Такой пользователь уже существует');
-      }
-    })
-    .catch(next);
-
   bcrypt
     .hash(req.body.password, 10)
     .then((hash) => User.create({
       email: req.body.email,
       password: hash,
+      name: req.body.name,
     }))
     .then((user) => {
-      user.password = null;
-      res.status(200).send({ user });
+      res.status(200).send({ name: user.name, email: user.email });
     })
-    .catch(next);
+    .catch((err) => {
+      if (err.name === 'ValidationError') {
+        next(new ReqError('ошибка валидации'));
+      } else {
+        next(err);
+      }
+      if (err.code === 11000) {
+        next(new ConflictError('Такой пользователь уже существует'));
+      } else {
+        next(err);
+      }
+    });
 }
 
 function updateUser(req, res, next) {
-  const id = req.headers.userid;
+  const id = req.user._id;
 
   return User.findByIdAndUpdate(
     id,
@@ -74,8 +65,7 @@ function updateUser(req, res, next) {
     },
   )
     .then((user) => {
-      user.password = null;
-      res.status(200).send({ user });
+      res.status(200).send({ name: user.name, email: user.email });
     })
     .catch((err) => {
       if (err.name === 'ValidationError') {
@@ -106,8 +96,7 @@ function login(req, res, next) {
         const token = jwt.sign({ _id: user._id }, NODE_ENV === 'production' ? JWT_SECRET : 'dev-secret', {
           expiresIn: '7d',
         });
-        user.password = null;
-        res.send({ token, user });
+        res.send({ token, email: user.email });
       });
     })
     .catch((err) => {

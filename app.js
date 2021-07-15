@@ -2,17 +2,13 @@ const express = require('express');
 require('dotenv').config();
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
-const { celebrate, Joi } = require('celebrate');
 const { errors } = require('celebrate');
 const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
-const { createUser, login } = require('./controllers/users');
 const router = require('./routes/index');
-const NotError = require('./errors/not-found-err');
 const ServerError = require('./errors/server-error');
 const { requestLogger, errorLogger } = require('./middlewares/logger');
-const { validateEmail } = require('./errors/validation-error');
 
 const CORS_WHITELIST = [
   'http://mesto.ivladsk.nomoredomains.club',
@@ -20,6 +16,8 @@ const CORS_WHITELIST = [
   'http://localhost:3002',
   'https://mesto.ivladsk.nomoredomains.club',
 ];
+
+const { MONGO_ADRESS } = process.env;
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -45,7 +43,7 @@ app.use(helmet());
 
 app.use(bodyParser.json());
 
-mongoose.connect('mongodb://localhost:27017/bitfilmsdb', {
+mongoose.connect(MONGO_ADRESS, {
   useNewUrlParser: true,
   useCreateIndex: true,
   useFindAndModify: false,
@@ -59,31 +57,6 @@ app.use(limiter);
 app.use(cors(corsOption));
 
 app.use(router);
-
-app.post('/signin',
-  celebrate({
-    body: Joi.object()
-      .keys({
-        email: Joi.string().required().custom(validateEmail),
-        password: Joi.string().required(),
-      })
-      .unknown(true),
-  }), login);
-
-app.post(
-  '/signup',
-  celebrate({
-    body: Joi.object().keys({
-      email: Joi.string().required().custom(validateEmail),
-      password: Joi.string().required(),
-    }).unknown(true),
-  }),
-  createUser,
-);
-
-app.get('*', () => {
-  throw new NotError('страница не найдена');
-});
 
 app.use(errorLogger);
 

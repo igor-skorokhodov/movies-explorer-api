@@ -11,7 +11,7 @@ function getMovies(req, res, next) {
 }
 
 function createMovie(req, res, next) {
-  return Movie.create({ ...req.body })
+  return Movie.create({ ...req.body, owner: req.user._id })
     .then((movie) => {
       res.status(200).send(movie);
     })
@@ -32,17 +32,10 @@ function deleteMovie(req, res, next) {
     .orFail(new NotFoundError('Карточка не найдена'))
     .then((movie) => {
       if (movie.owner.toString() === userId) {
-        return Movie.findByIdAndRemove(id)
+        return Movie.remove(id)
           .orFail(new ReqError('Карточка не найдена'))
-          .then((data) => {
-            res.status(200).send({ data });
-          })
-          .catch((err) => {
-            if (err.name === 'CastError') {
-              next(new ReqError('Карточка не найдена'));
-            } else {
-              next(err);
-            }
+          .then((deletedCard) => {
+            res.status(200).send({ deletedCard });
           });
       }
       return next(new ForbiddenError('Нет прав на удаление карточки'));
