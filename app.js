@@ -43,7 +43,7 @@ app.use(helmet());
 
 app.use(bodyParser.json());
 
-mongoose.connect(MONGO_ADRESS, {
+mongoose.connect(MONGO_ADRESS || 'mongodb://localhost:27017/bitfilmsdb', {
   useNewUrlParser: true,
   useCreateIndex: true,
   useFindAndModify: false,
