@@ -17,7 +17,7 @@ const CORS_WHITELIST = [
   'https://mesto.ivladsk.nomoredomains.club',
 ];
 
-const { MONGO_ADRESS } = process.env;
+const { MONGO_ADRESS, NODE_ENV } = process.env;
 
 const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
@@ -35,6 +35,8 @@ const corsOption = {
   },
 };
 
+const { dbAdress } = 'mongodb://localhost:27017/bitfilmsdb';
+
 const { PORT = 3000 } = process.env;
 
 const app = express();
@@ -43,7 +45,7 @@ app.use(helmet());
 
 app.use(bodyParser.json());
 
-mongoose.connect(MONGO_ADRESS || 'mongodb://localhost:27017/bitfilmsdb', {
+mongoose.connect(NODE_ENV === 'production' ? MONGO_ADRESS : dbAdress, {
   useNewUrlParser: true,
   useCreateIndex: true,
   useFindAndModify: false,
