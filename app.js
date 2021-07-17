@@ -35,7 +35,7 @@ const corsOption = {
   },
 };
 
-const { dbAdress } = 'mongodb://localhost:27017/bitfilmsdb';
+const dbAdress = 'mongodb://localhost:27017/bitfilmsdb';
 
 const { PORT = 3000 } = process.env;
 
