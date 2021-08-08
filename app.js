@@ -3,7 +3,6 @@ require('dotenv').config();
 const mongoose = require('mongoose');
 const bodyParser = require('body-parser');
 const { errors } = require('celebrate');
-const cors = require('cors');
 const helmet = require('helmet');
 const rateLimit = require('express-rate-limit');
 const router = require('./routes/index');
@@ -23,17 +22,6 @@ const limiter = rateLimit({
   windowMs: 15 * 60 * 1000,
   max: 100,
 });
-
-const corsOption = {
-  credentials: true,
-  origin: function checkCorsList(origin, callback) {
-    if (CORS_WHITELIST.indexOf(origin) !== -1 || !origin) {
-      callback(null, true);
-    } else {
-      callback(new Error('Not allowed by CORS'));
-    }
-  },
-};
 
 const dbAdress = 'mongodb://localhost:27017/bitfilmsdb';
 
@@ -56,7 +44,24 @@ app.use(requestLogger);
 
 app.use(limiter);
 
-app.use(cors(corsOption));
+app.use(function(req, res, next) {
+  const { method } = req;
+  const { origin } = req.headers; // Сохраняем источник запроса в переменную origin
+  // проверяем, что источник запроса есть среди разрешённых
+  const DEFAULT_ALLOWED_METHODS = "GET,HEAD,PUT,PATCH,POST,DELETE";
+  const requestHeaders = req.headers['access-control-request-headers'];
+  if (CORS_WHITELIST.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', "*");
+  }
+  if (method === 'OPTIONS') {
+    // разрешаем кросс-доменные запросы любых типов (по умолчанию)
+    res.header('Access-Control-Allow-Methods', DEFAULT_ALLOWED_METHODS);
+    res.header('Access-Control-Allow-Headers', requestHeaders);
+    // завершаем обработку запроса и возвращаем результат клиенту
+    return res.end();
+}
+  next();
+}); ;
 
 app.use(router);
 
